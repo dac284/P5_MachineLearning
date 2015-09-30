@@ -2,8 +2,9 @@
 
 import sys
 import pickle
+import numpy as np
 sys.path.append("../tools/")
-import matplotlib.pyplot
+import matplotlib.pyplot as plt
 from feature_format import featureFormat, targetFeatureSplit
 from tester import dump_classifier_and_data
 
@@ -22,23 +23,36 @@ data_dict = pickle.load(open("final_project_dataset.pkl", "r") )
 data_dict.pop('TOTAL', 0)
 
 ### Ran some EDA to find what proportion of the 145 data points were POIs
+## Proportion of data points that are POIs
+## Investigation of NaN values
 #x = 0
-#y= 'from_messages'
+#na = {}
 #for k, v in data_dict.iteritems():
 #    if v['poi']:
 #        x += 1
-#print 18./145
+#    for key, val in v.iteritems():
+#        if val == 'NaN':
+#            try:
+#                na[key] += 1
+#            except:
+#                na[key] = 1
+#print len(data_dict.keys()) // total data points
+#print 18./145  // proportion of data points that are POIs
+#print na // dictionary of NaN value counts for each feature
+
 
 ### Used this to do some EDA and visualize some of the features
+## This example shows investigation of total_payments and total_stock_value features
+## Plot is included in the written report
 #data = featureFormat(data_dict, features_list)
 #use_colors = {0 : 'red', 1 : 'blue'}
 #for point in data:
-#    salary = point[1]
-#    bonus = point[2]
-#    matplotlib.pyplot.scatter( salary, bonus, c=[use_colors[point[0]]])
-#matplotlib.pyplot.xlabel("salary")
-#matplotlib.pyplot.ylabel("bonus")
-#matplotlib.pyplot.show()
+#    total_payments = point[3]
+#    total_stock_value = point[8]
+#    matplotlib.pyplot.scatter( total_payments, total_stock_value, c=[use_colors[point[0]]])
+#plt.xlabel("total_payments")
+#plt.ylabel("total_stock_value")
+#plt.show()
 
 
 ### Task 3: Create new feature(s)
@@ -99,41 +113,71 @@ clf = DecisionTreeClassifier(min_samples_leaf = 1)
 ### Code for feature selection and parameter tuning
 
 #from sklearn.feature_selection import SelectKBest
-#selection = SelectKBest(k=4)
+#selection = SelectKBest(k=i)
 #selection.fit(features, labels)
-#print selection.get_support()
+#print selection.scores_
 #from sklearn.grid_search import GridSearchCV
-#dtc = DecisionTreeClassifier(random_state = 10)
-#params = {'min_samples_leaf': [1, 2, 5, 8, 10, 15], 'max_depth': [2, 5, 10]}
-#from sklearn.metrics import fbeta_score, make_scorer
-#ftwo_scorer = make_scorer(fbeta_score, beta=1)
-#clf = GridSearchCV(dtc, params, scoring='f1')
-#clf.fit(features, labels)
-#print clf.best_params_
+#clf = DecisionTreeClassifier(random_state = 10)
+#clf_params = {'min_samples_leaf': [1, 2, 5, 8, 10, 15], 'max_depth': [2, 5, 10]}
+#GSCV = GridSearchCV(dtc, clf_params, scoring='f1')
+#GSCV.fit(features, labels)
+#print GSCV.best_params_
 
-### Task 5: Tune your classifier to achieve better than .3 precision and recall 
+### Another use of GridSearch with cross val
+# Set up cross validator (will be used for tuning all classifiers)
+#from sklearn.cross_validation import StratifiedShuffleSplit
+#cv = StratifiedShuffleSplit(labels, n_iter = 1000, random_state = 42)
+#GSCV = GridSearchCV(clf, param_grid = clf_params, cv = cv, scoring = 'recall')
+#GSCV.fit(features, labels)
+#print GSCV.best_params_
+
+### Task 5: Tune your classifier to achieve better than .3 precision and recall
 ### using our testing script. Check the tester.py script in the final project
 ### folder for details on the evaluation method, especially the test_classifier
 ### function. Because of the small size of the dataset, the script uses
 ### stratified shuffle split cross validation. For more info: 
 ### http://scikit-learn.org/stable/modules/generated/sklearn.cross_validation.StratifiedShuffleSplit.html
 
-### I moved evaluation to testing.py script to get better stats and utilize cross-validation
+
 
 # Example starting point. Try investigating other evaluation techniques!
-#from sklearn.cross_validation import train_test_split
-#features_train, features_test, labels_train, labels_test = \
-#    train_test_split(features, labels, test_size = 0.3, random_state = 42)
-#
-#clf.fit(features_train, labels_train)
-#pred = clf.predict(features_test)
 
+### This section is for my attempt to use SelectKBest to pick features
+### I ran 1000 training/test splits and for each one fit a model with
+### 1 through 19 features using selectKBest. Then I found the average
+### precision and recall for all models with 1 feature, all with 2, etc.
+#from sklearn.cross_validation import train_test_split
 #from sklearn.metrics import accuracy_score, roc_auc_score, average_precision_score, precision_score, recall_score
+#from sklearn.pipeline import make_pipeline
+#prec_array = [0] * 19
+#rec_array = [0] * 19
+#for x in xrange(1000):
+#    features_train, features_test, labels_train, labels_test = \
+#        train_test_split(features, labels, test_size = 0.3, random_state = x)
+#
+#    for i in xrange(1,20):
+#        selection = SelectKBest(k=i)
+#        KbestCLF = make_pipeline(selection, clf)
+#        KbestCLF.fit(features_train, labels_train)
+#        pred = KbestCLF.predict(features_test)
+#        precision = precision_score(labels_test, pred)
+#        recall = recall_score(labels_test, pred)
+#        prec_array[i-1] += precision/1000.
+#        rec_array[i-1] += recall/1000.
+#
+#plt.plot(xrange(1,20), rec_array, 'bo-', label = 'Recall')
+#plt.plot(xrange(1,20), prec_array, 'go-', label = 'Precision')
+#plt.xlabel('K best Features')
+#plt.ylabel('Score')
+#plt.title('Precision and Recall vs. Number of Features')
+#plt.legend()
+#plt.show()
+
+### These were some other evaluation metrics I tested out.
+### I moved evaluation to testing.py script to get better stats and utilize cross-validation that was already implemented there.
 #auc = roc_auc_score(labels_test, pred)
 #ap = average_precision_score(labels_test, pred)
 #acc = accuracy_score(labels_test, pred)
-#precision = precision_score(labels_test, pred)
-#recall = recall_score(labels_test, pred)
 #print acc, precision, recall
 #print clf.feature_importances_
 

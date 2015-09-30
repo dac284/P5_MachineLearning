@@ -32,10 +32,10 @@ def test_classifier(clf, dataset, feature_list, folds = 1000):
     false_negatives = 0
     true_positives = 0
     false_positives = 0
-    roc = 0
-    ap = 0
-    
-    for train_idx, test_idx in cv: 
+#    roc = 0
+#    ap = 0
+#    feat_imp = [0] * (len(feature_list) - 1)
+    for train_idx, test_idx in cv:
         features_train = []
         features_test  = []
         labels_train   = []
@@ -64,9 +64,9 @@ def test_classifier(clf, dataset, feature_list, folds = 1000):
                 print "All predictions should take value 0 or 1."
                 print "Evaluating performance for processed predictions:"
                 break
-        roc += roc_auc_score(labels_test, predictions)
-        ap += average_precision_score(labels_test, predictions)
-
+#        roc += roc_auc_score(labels_test, predictions)
+#        ap += average_precision_score(labels_test, predictions)
+#        feat_imp += clf.feature_importances_
 
     try:
         total_predictions = true_negatives + false_negatives + false_positives + true_positives
@@ -76,14 +76,15 @@ def test_classifier(clf, dataset, feature_list, folds = 1000):
         recall = 1.0 * true_positives/(true_positives+false_negatives)
         f1 = 2.0 * true_positives/(2 * true_positives + false_positives+false_negatives)
         f2 = (1 + 2.0 * 2.0) * precision * recall/(4 * precision + recall)
-        # Added ROC AUC and AP to the mix of metrics to evaluate
-        roc = roc * 1.0/folds
-        ap = ap * 1.0/folds
-        
+        ### Added ROC AUC and AP to the mix of metrics to evaluate
+#        roc = roc * 1.0/folds
+#        ap = ap * 1.0/folds
+#        feat_imp = feat_imp * 1.0 / folds
         print clf
         print PERF_FORMAT_STRING.format(accuracy, precision, recall, f1, f2, display_precision = 5)
         print ""
-        print roc, ap
+#        print roc, ap
+#        print feat_imp
 
     except:
         print "Got a divide by zero when trying out:", clf
